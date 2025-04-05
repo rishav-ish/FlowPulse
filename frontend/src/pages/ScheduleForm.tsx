@@ -38,8 +38,7 @@ export function ScheduleForm() {
       expression: '0 * * * *', // Default to run every hour
       isActive: true,
       retryCount: 0,
-      fallbackDelay: 0,
-      maxInvocations: -1
+      fallbackDelay: 0
     },
     validate: {
       apiId: (value) => (value > 0 ? null : 'API is required'),
@@ -168,7 +167,7 @@ export function ScheduleForm() {
         )}
         
         <Paper shadow="xs" p="md" withBorder>
-          <form onSubmit={form.onSubmit(handleSubmit)}>
+          <form onSubmit={form.onSubmit((values) => handleSubmit(values))}>
             <Tabs value={activeTab} onTabChange={setActiveTab} mb="md">
               <Tabs.List>
                 <Tabs.Tab value="schedule">Schedule</Tabs.Tab>

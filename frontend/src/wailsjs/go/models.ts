@@ -11,7 +11,6 @@ export namespace models {
     description: string = '';
     createdAt: string = '';
     updatedAt: string = '';
-    active: boolean = true;
 
     constructor(init?: Partial<API>) {
       Object.assign(this, init);
@@ -20,7 +19,6 @@ export namespace models {
 
   export class Schedule {
     id: number = 0;
-    name: string = '';
     apiId: number = 0;
     type: string = 'cron';
     expression: string = '';
@@ -29,8 +27,6 @@ export namespace models {
     fallbackDelay: number = 0;
     createdAt: string = '';
     updatedAt: string = '';
-    nextRunAt: string = '';
-    lastRunAt: string = '';
 
     constructor(init?: Partial<Schedule>) {
       Object.assign(this, init);
@@ -43,7 +39,7 @@ export namespace models {
     scheduleId: number | null = null;
     statusCode: number = 0;
     response: string = '';
-    responseTime: number = 0;
+    error: string = '';
     executedAt: string = '';
 
     constructor(init?: Partial<ExecutionLog>) {

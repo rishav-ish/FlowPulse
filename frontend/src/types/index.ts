@@ -32,6 +32,9 @@ export type HTTPMethod = typeof HTTP_METHODS[number];
 export const SCHEDULE_TYPES = ['cron', 'interval'] as const;
 export type ScheduleType = typeof SCHEDULE_TYPES[number];
 
+export const SCHEDULE_STATUS = ['active', 'inactive', 'completed'] as const;
+export type ScheduleStatus = typeof SCHEDULE_STATUS[number];
+
 // Utility function to format date time
 export function formatDateTime(dateStr: string): string {
   if (!dateStr) return '';
