@@ -17,7 +17,8 @@ import {
   Title,
   Divider,
   Stack,
-  Paper
+  Paper,
+  Image
 } from '@mantine/core';
 import {
   IconDashboard,
@@ -31,6 +32,7 @@ import {
   IconBrandGithub
 } from '@tabler/icons-react';
 import './App.css';
+import flowPulseLogo from './assets/logo/flowpulse-logo.svg';
 
 interface NavLinkProps {
   icon: React.ReactNode;
@@ -223,9 +225,7 @@ export default function App() {
               </MediaQuery>
               
               <Group spacing="xs">
-                <ThemeIcon size={30} radius="xl" variant="filled" color="blue">
-                  <IconApi size={18} />
-                </ThemeIcon>
+                <Image src={flowPulseLogo} width={40} height={40} />
                 <Title order={3}>FlowPulse</Title>
               </Group>
             </Group>
