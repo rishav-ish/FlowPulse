@@ -252,20 +252,20 @@ export function APIList() {
                 <Card.Section p="md" style={{ 
                   borderBottom: `1px solid ${theme.colorScheme === 'dark' ? theme.colors.dark[4] : theme.colors.gray[2]}`
                 }}>
-                  <Group position="apart">
-                    <Group spacing="xs">
-                      <Badge size="lg" color={getMethodColor(api.method)}>
+                  <Group position="apart" noWrap>
+                    <Group spacing="xs" noWrap style={{ flex: 1, minWidth: 0 }}>
+                      <Badge size="lg" color={getMethodColor(api.method)} style={{ flexShrink: 0 }}>
                         {api.method}
                       </Badge>
                       <Tooltip label="View execution logs">
-                        <ActionIcon variant="light" onClick={() => viewApiLogs(api)}>
+                        <ActionIcon variant="light" onClick={() => viewApiLogs(api)} style={{ flexShrink: 0 }}>
                           <IconClock size={16} />
                         </ActionIcon>
                       </Tooltip>
                     </Group>
-                    <Menu position="bottom-end">
+                    <Menu position="bottom-end" withinPortal>
                       <Menu.Target>
-                        <ActionIcon>
+                        <ActionIcon style={{ flexShrink: 0 }}>
                           <IconDotsVertical size={16} />
                         </ActionIcon>
                       </Menu.Target>
@@ -303,16 +303,18 @@ export function APIList() {
                   </Group>
                 </Card.Section>
                 
-                <Box mt="md" mb="md">
-                  <Text weight={500} size="lg" mb={5} lineClamp={1}>
+                <Box mt="md" mb="md" sx={{ height: '130px', display: 'flex', flexDirection: 'column' }}>
+                  <Text weight={500} size="lg" mb={5} lineClamp={1} title={api.name}>
                     {api.name}
                   </Text>
-                  <Text size="sm" color="dimmed" mb="md" lineClamp={2} title={api.description || ''}>
+                  <Text size="sm" color="dimmed" mb="md" lineClamp={2} title={api.description || 'No description'}>
                     {api.description || 'No description'}
                   </Text>
-                  <Text size="xs" color="dimmed" lineClamp={1} title={api.url || ''}>
-                    {api.url}
-                  </Text>
+                  <Box mt="auto">
+                    <Text size="xs" color="dimmed" lineClamp={1} title={api.url}>
+                      {api.url}
+                    </Text>
+                  </Box>
                 </Box>
                 
                 <Button
@@ -339,7 +341,7 @@ export function APIList() {
         centered
       >
         <Text mb="md">
-          Are you sure you want to delete the API <b>{apiToDelete?.name}</b>? This action cannot be undone.
+          Are you sure you want to delete the API <b style={{ wordBreak: 'break-word' }}>{apiToDelete?.name}</b>? This action cannot be undone.
         </Text>
         <Text mb="xl" size="sm" color="dimmed">
           Any schedules using this API will also be affected.
@@ -358,7 +360,12 @@ export function APIList() {
       <Drawer
         opened={executionDrawerOpen}
         onClose={() => setExecutionDrawerOpen(false)}
-        title={selectedApi ? `Execution Logs: ${selectedApi.name}` : "Execution Result"}
+        title={selectedApi ? 
+          <Text lineClamp={1} style={{ maxWidth: 'calc(100% - 40px)' }}>
+            Execution Logs: {selectedApi.name}
+          </Text> : 
+          "Execution Result"
+        }
         padding="md"
         size="xl"
         position="right"
@@ -366,40 +373,47 @@ export function APIList() {
         {selectedApiLogs.length > 0 ? (
           <>
             <Text mb="md">Recent execution logs for this API:</Text>
-            <Table>
-              <thead>
-                <tr>
-                  <th>Status</th>
-                  <th>Time</th>
-                  <th>Response</th>
-                </tr>
-              </thead>
-              <tbody>
-                {selectedApiLogs.map((log) => (
-                  <tr key={log.id}>
-                    <td>
-                      <Group spacing="xs">
-                        <ThemeIcon
-                          size="xs"
-                          radius="xl"
-                          color={log.statusCode >= 200 && log.statusCode < 300 ? 'green' : 'red'}
-                        >
-                          {log.statusCode >= 200 && log.statusCode < 300 ? 
-                            <IconCheck size={10} /> : <IconX size={10} />}
-                        </ThemeIcon>
-                        <Text>{log.statusCode}</Text>
-                      </Group>
-                    </td>
-                    <td>{formatDateTime(log.executedAt)}</td>
-                    <td>
-                      <Text size="sm" lineClamp={1}>
-                        {log.response?.substring(0, 50) || '(empty)'}
-                      </Text>
-                    </td>
+            <Box sx={{ overflowX: 'auto' }}>
+              <Table>
+                <thead>
+                  <tr>
+                    <th style={{ width: '100px' }}>Status</th>
+                    <th style={{ width: '180px' }}>Time</th>
+                    <th>Response</th>
                   </tr>
-                ))}
-              </tbody>
-            </Table>
+                </thead>
+                <tbody>
+                  {selectedApiLogs.map((log) => (
+                    <tr key={log.id}>
+                      <td>
+                        <Group spacing="xs" noWrap>
+                          <ThemeIcon
+                            size="xs"
+                            radius="xl"
+                            color={log.statusCode >= 200 && log.statusCode < 300 ? 'green' : 'red'}
+                          >
+                            {log.statusCode >= 200 && log.statusCode < 300 ? 
+                              <IconCheck size={10} /> : <IconX size={10} />}
+                          </ThemeIcon>
+                          <Text>{log.statusCode}</Text>
+                        </Group>
+                      </td>
+                      <td>{formatDateTime(log.executedAt)}</td>
+                      <td>
+                        <Text size="sm" sx={{ 
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          maxWidth: '300px'
+                        }}>
+                          {log.response?.substring(0, 50) || '(empty)'}
+                        </Text>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+            </Box>
             <Button 
               mt="lg" 
               variant="subtle" 
@@ -421,7 +435,11 @@ export function APIList() {
             </Group>
             
             <Text weight={500} mb="xs">Response:</Text>
-            <Code block>{executionResult.response || '(empty)'}</Code>
+            <Paper withBorder p="sm" style={{ maxHeight: '500px', overflow: 'auto' }}>
+              <Code block style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                {executionResult.response || '(empty)'}
+              </Code>
+            </Paper>
             
             <Text size="sm" color="dimmed" mt="md">
               Executed at {formatDateTime(executionResult.executedAt)}

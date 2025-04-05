@@ -6,10 +6,12 @@ import {
   LoadingOverlay, Alert, Code
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
-import { IconAlertCircle, IconCheck, IconDeviceFloppy, IconArrowLeft } from '@tabler/icons-react';
+import { IconAlertCircle, IconCheck, IconDeviceFloppy, IconArrowLeft, IconCode, IconWorld } from '@tabler/icons-react';
 import { API, BaseAPI, HTTP_METHODS, HTTPMethod } from '../types';
 import { GetAPIByID, CreateAPI, UpdateAPI } from '../../wailsjs/go/main/App';
 import { models } from '../../wailsjs/go/models';
+import { JsonInput } from '@mantine/core';
+import { Stepper } from '@mantine/core';
 
 export function APIForm() {
   const { id } = useParams();
@@ -116,30 +118,63 @@ export function APIForm() {
             {...form.getInputProps('name')}
           />
 
-          <Select
-            label="Method"
-            placeholder="Select HTTP method"
-            data={HTTP_METHODS}
-            required
-            mt="md"
-            {...form.getInputProps('method')}
-          />
-
-          <TextInput
-            label="URL"
-            placeholder="Enter API URL"
-            required
-            mt="md"
-            {...form.getInputProps('url')}
-          />
-
-          <Textarea
-            label="Headers"
-            placeholder="Enter headers (JSON format)"
-            minRows={3}
-            mt="md"
-            {...form.getInputProps('headers')}
-          />
+          <Stepper.Step 
+            label="Request Configuration" 
+            description="URL, method and data"
+            icon={<IconCode size={18} />}
+            allowStepSelect={!loading && form.values.name.length > 0}
+          >
+            <Box mt="xl">
+              <Select
+                label="HTTP Method"
+                placeholder="Select HTTP method"
+                required
+                size="md"
+                mb="md"
+                data={HTTP_METHODS}
+                {...form.getInputProps('method')}
+              />
+              
+              <TextInput
+                label="API URL"
+                placeholder="https://api.example.com/endpoint"
+                description="Full URL for the API endpoint"
+                required
+                size="md"
+                mb="md"
+                icon={<IconWorld size={16} />}
+                styles={(theme) => ({
+                  input: {
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                  },
+                  wrapper: {
+                    position: 'relative'
+                  },
+                  description: {
+                    fontSize: '0.75rem',
+                    marginTop: '0.25rem',
+                    whiteSpace: 'normal',
+                    overflow: 'visible'
+                  }
+                })}
+                {...form.getInputProps('url')}
+              />
+              
+              <JsonInput
+                label="Headers"
+                placeholder="Enter request headers in JSON format"
+                validationError="Invalid JSON"
+                formatOnBlur
+                autosize
+                minRows={5}
+                maxRows={10}
+                mb="md"
+                {...form.getInputProps('headers')}
+              />
+            </Box>
+          </Stepper.Step>
 
           <Textarea
             label="Body"

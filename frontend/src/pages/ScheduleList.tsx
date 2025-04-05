@@ -328,9 +328,9 @@ export function ScheduleList() {
                         <Text size="xs" color="dimmed">Fallback Delay</Text>
                         <Text size="sm">{schedule.fallbackDelay}s</Text>
                       </Box>
-                      <Box>
-                        <Text size="xs" color="dimmed">Status</Text>
-                        <Badge color={schedule.isActive ? 'green' : 'gray'}>
+                      <Box style={{ maxWidth: '30%' }}>
+                        <Text size="xs" color="dimmed" truncate>Status</Text>
+                        <Badge color={schedule.isActive ? 'green' : 'orange'}>
                           {schedule.isActive ? 'Active' : 'Paused'}
                         </Badge>
                       </Box>

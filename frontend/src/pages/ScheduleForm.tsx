@@ -11,7 +11,7 @@ import {
   IconAlertCircle, IconDeviceFloppy, 
   IconArrowLeft, IconClock 
 } from '@tabler/icons-react';
-import { Schedule, API, BaseSchedule, SCHEDULE_TYPES } from '../types';
+import { Schedule, API, BaseSchedule, SCHEDULE_TYPES, SCHEDULE_STATUS } from '../types';
 import { 
   GetAllSchedules, CreateSchedule, UpdateSchedule, 
   GetAllAPIs, GetAPIByID, GetSchedulesByAPIID 
@@ -38,7 +38,8 @@ export function ScheduleForm() {
       expression: '0 * * * *', // Default to run every hour
       isActive: true,
       retryCount: 0,
-      fallbackDelay: 0
+      fallbackDelay: 0,
+      maxInvocations: -1
     },
     validate: {
       apiId: (value) => (value > 0 ? null : 'API is required'),
@@ -178,11 +179,32 @@ export function ScheduleForm() {
                 <Select
                   label="API"
                   placeholder="Select API to schedule"
-                  data={apis.map(api => ({ value: api.id.toString(), label: api.name }))}
+                  data={apis.map(api => ({ 
+                    value: api.id.toString(), 
+                    label: api.name,
+                  }))}
                   required
                   mb="md"
                   value={form.values.apiId.toString()}
                   onChange={(value) => form.setFieldValue('apiId', parseInt(value || '0'))}
+                  styles={(theme) => ({
+                    dropdown: {
+                      maxWidth: '100%'
+                    },
+                    item: {
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis'
+                    },
+                    value: {
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis'
+                    },
+                    input: {
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis'
+                    }
+                  })}
                 />
                 
                 <Radio.Group
@@ -215,8 +237,10 @@ export function ScheduleForm() {
                     <Text size="xs" weight={500} mb="xs">Examples:</Text>
                     <Box p="xs" style={{ backgroundColor: theme.colorScheme === 'dark' ? theme.colors.dark[6] : theme.colors.gray[0] }}>
                       {cronExamples.map((example, index) => (
-                        <Group key={index} mb={5} position="apart">
-                          <Text size="xs">{example.label}</Text>
+                        <Group key={index} mb={5} position="apart" noWrap>
+                          <Text size="xs" truncate style={{ maxWidth: '60%' }}>
+                            {example.label}
+                          </Text>
                           <Button 
                             variant="subtle" 
                             size="xs" 

@@ -175,6 +175,24 @@ func (a *App) ToggleSchedule(id int, isActive bool) error {
 	return a.UpdateSchedule(schedule)
 }
 
+// CancelSchedule cancels a schedule permanently
+func (a *App) CancelSchedule(id int) error {
+	// First get the schedule
+	schedule, err := a.db.GetScheduleByID(id)
+	if err != nil {
+		return fmt.Errorf("failed to get schedule: %w", err)
+	}
+
+	// Stop the job
+	if err := a.scheduler.StopJob(id); err != nil {
+		log.Printf("Failed to stop job for schedule ID %d: %v", id, err)
+	}
+
+	// Update to inactive status
+	schedule.IsActive = false
+	return a.db.UpdateSchedule(schedule)
+}
+
 // Logs methods
 
 // GetExecutionLogsByAPIID returns execution logs for an API
