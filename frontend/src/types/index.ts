@@ -5,6 +5,8 @@ import { models } from '../../wailsjs/go/models';
 export type API = models.API;
 export type Schedule = models.Schedule;
 export type ExecutionLog = models.ExecutionLog;
+export type Collection = models.Collection;
+export type AnalyticsSummary = models.AnalyticsSummary;
 
 // Base types for forms
 export interface BaseAPI {
@@ -13,6 +15,12 @@ export interface BaseAPI {
   url: string;
   headers: string;
   body: string;
+  description: string;
+  collectionId: number;
+}
+
+export interface BaseCollection {
+  name: string;
   description: string;
 }
 
@@ -23,6 +31,15 @@ export interface BaseSchedule {
   isActive: boolean;
   retryCount: number;
   fallbackDelay: number;
+}
+
+// Analytics types
+export interface StatusCounts {
+  success: number;
+  redirect: number;
+  client_error: number;
+  server_error: number;
+  other: number;
 }
 
 // Constants
@@ -75,6 +92,19 @@ declare global {
           CreateAPI(api: API): Promise<API>;
           UpdateAPI(api: API): Promise<API>;
           DeleteAPI(id: number): Promise<void>;
+          
+          // Collection methods
+          GetAllCollections(): Promise<Collection[]>;
+          GetCollectionByID(id: number): Promise<Collection>;
+          CreateCollection(collection: Collection): Promise<Collection>;
+          UpdateCollection(collection: Collection): Promise<Collection>;
+          DeleteCollection(id: number): Promise<void>;
+          GetAPIsByCollectionID(collectionId: number): Promise<API[]>;
+          
+          // Analytics methods
+          GetAPIAnalytics(apiId: number): Promise<AnalyticsSummary>;
+          GetOverallAnalytics(): Promise<AnalyticsSummary>;
+          GetExecutionStatusCounts(apiId: number): Promise<StatusCounts>;
           
           // Schedule methods
           GetAllSchedules(): Promise<Schedule[]>;

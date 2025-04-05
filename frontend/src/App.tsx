@@ -29,7 +29,9 @@ import {
   IconSun,
   IconSettings,
   IconLogout,
-  IconBrandGithub
+  IconBrandGithub,
+  IconFolder,
+  IconChartBar
 } from '@tabler/icons-react';
 import './App.css';
 import flowPulseLogo from './assets/logo/flowpulse-logo.svg';
@@ -131,8 +133,10 @@ export default function App() {
   const links = [
     { icon: <IconDashboard size={18} />, label: 'Dashboard', path: '/' },
     { icon: <IconApi size={18} />, label: 'APIs', path: '/apis' },
+    { icon: <IconFolder size={18} />, label: 'Collections', path: '/collections' },
     { icon: <IconCalendarEvent size={18} />, label: 'Schedules', path: '/schedules' },
     { icon: <IconClipboardList size={18} />, label: 'Execution Logs', path: '/logs' },
+    { icon: <IconChartBar size={18} />, label: 'Analytics', path: '/analytics' },
   ];
 
   return (

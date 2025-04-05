@@ -6,23 +6,39 @@ export function CancelSchedule(arg1:number):Promise<void>;
 
 export function CreateAPI(arg1:models.API):Promise<models.API>;
 
+export function CreateCollection(arg1:models.Collection):Promise<models.Collection>;
+
 export function CreateSchedule(arg1:models.Schedule):Promise<models.Schedule>;
 
 export function DeleteAPI(arg1:number):Promise<void>;
+
+export function DeleteCollection(arg1:number):Promise<void>;
 
 export function DeleteSchedule(arg1:number):Promise<void>;
 
 export function ExecuteAPIManually(arg1:number):Promise<void>;
 
+export function GetAPIAnalytics(arg1:number):Promise<models.AnalyticsSummary>;
+
 export function GetAPIByID(arg1:number):Promise<models.API>;
 
+export function GetAPIsByCollectionID(arg1:number):Promise<Array<models.API>>;
+
 export function GetAllAPIs():Promise<Array<models.API>>;
+
+export function GetAllCollections():Promise<Array<models.Collection>>;
 
 export function GetAllExecutionLogs(arg1:number,arg2:number):Promise<Array<models.ExecutionLog>>;
 
 export function GetAllSchedules():Promise<Array<models.Schedule>>;
 
+export function GetCollectionByID(arg1:number):Promise<models.Collection>;
+
 export function GetExecutionLogsByAPIID(arg1:number,arg2:number):Promise<Array<models.ExecutionLog>>;
+
+export function GetExecutionStatusCounts(arg1:number):Promise<Record<string, number>>;
+
+export function GetOverallAnalytics():Promise<models.AnalyticsSummary>;
 
 export function GetRecentExecutions(arg1:number):Promise<Array<models.ExecutionLog>>;
 
@@ -31,5 +47,7 @@ export function GetSchedulesByAPIID(arg1:number):Promise<Array<models.Schedule>>
 export function ToggleSchedule(arg1:number,arg2:boolean):Promise<void>;
 
 export function UpdateAPI(arg1:models.API):Promise<models.API>;
+
+export function UpdateCollection(arg1:models.Collection):Promise<models.Collection>;
 
 export function UpdateSchedule(arg1:models.Schedule):Promise<void>;

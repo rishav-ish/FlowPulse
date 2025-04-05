@@ -10,12 +10,20 @@ export function CreateAPI(arg1) {
   return window['go']['main']['App']['CreateAPI'](arg1);
 }
 
+export function CreateCollection(arg1) {
+  return window['go']['main']['App']['CreateCollection'](arg1);
+}
+
 export function CreateSchedule(arg1) {
   return window['go']['main']['App']['CreateSchedule'](arg1);
 }
 
 export function DeleteAPI(arg1) {
   return window['go']['main']['App']['DeleteAPI'](arg1);
+}
+
+export function DeleteCollection(arg1) {
+  return window['go']['main']['App']['DeleteCollection'](arg1);
 }
 
 export function DeleteSchedule(arg1) {
@@ -26,12 +34,24 @@ export function ExecuteAPIManually(arg1) {
   return window['go']['main']['App']['ExecuteAPIManually'](arg1);
 }
 
+export function GetAPIAnalytics(arg1) {
+  return window['go']['main']['App']['GetAPIAnalytics'](arg1);
+}
+
 export function GetAPIByID(arg1) {
   return window['go']['main']['App']['GetAPIByID'](arg1);
 }
 
+export function GetAPIsByCollectionID(arg1) {
+  return window['go']['main']['App']['GetAPIsByCollectionID'](arg1);
+}
+
 export function GetAllAPIs() {
   return window['go']['main']['App']['GetAllAPIs']();
+}
+
+export function GetAllCollections() {
+  return window['go']['main']['App']['GetAllCollections']();
 }
 
 export function GetAllExecutionLogs(arg1, arg2) {
@@ -42,8 +62,20 @@ export function GetAllSchedules() {
   return window['go']['main']['App']['GetAllSchedules']();
 }
 
+export function GetCollectionByID(arg1) {
+  return window['go']['main']['App']['GetCollectionByID'](arg1);
+}
+
 export function GetExecutionLogsByAPIID(arg1, arg2) {
   return window['go']['main']['App']['GetExecutionLogsByAPIID'](arg1, arg2);
+}
+
+export function GetExecutionStatusCounts(arg1) {
+  return window['go']['main']['App']['GetExecutionStatusCounts'](arg1);
+}
+
+export function GetOverallAnalytics() {
+  return window['go']['main']['App']['GetOverallAnalytics']();
 }
 
 export function GetRecentExecutions(arg1) {
@@ -60,6 +92,10 @@ export function ToggleSchedule(arg1, arg2) {
 
 export function UpdateAPI(arg1) {
   return window['go']['main']['App']['UpdateAPI'](arg1);
+}
+
+export function UpdateCollection(arg1) {
+  return window['go']['main']['App']['UpdateCollection'](arg1);
 }
 
 export function UpdateSchedule(arg1) {

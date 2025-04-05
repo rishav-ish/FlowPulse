@@ -9,6 +9,8 @@ import { APIForm } from './pages/APIForm'
 import { ScheduleList } from './pages/ScheduleList'
 import { ScheduleForm } from './pages/ScheduleForm'
 import { LogViewer } from './pages/LogViewer'
+import { CollectionList } from './pages/CollectionList'
+import { Analytics } from './pages/Analytics'
 import { AppDebug } from './AppDebug'
 import { waitForWailsRuntime, getWailsRuntimeStatus } from './lib/wailsRuntime'
 import './style.css'
@@ -169,6 +171,9 @@ function Main() {
                             <Route path="apis" element={<APIList />} />
                             <Route path="apis/new" element={<APIForm />} />
                             <Route path="apis/:id/edit" element={<APIForm />} />
+                            <Route path="collections" element={<CollectionList />} />
+                            <Route path="analytics" element={<Analytics />} />
+                            <Route path="analytics/:id" element={<Analytics />} />
                             <Route path="schedules" element={<ScheduleList />} />
                             <Route path="schedules/new" element={<ScheduleForm />} />
                             <Route path="schedules/edit/:id" element={<ScheduleForm />} />

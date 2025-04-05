@@ -69,6 +69,35 @@ func (s *DBService) initDB() error {
 	if err != nil {
 		return err
 	}
+	
+	// Check if collection_id column exists in apis table, and add it if not
+	var columnExists bool
+	err = s.db.QueryRow("SELECT COUNT(*) FROM pragma_table_info('apis') WHERE name = 'collection_id'").Scan(&columnExists)
+	if err != nil {
+		return fmt.Errorf("failed to check for collection_id column: %w", err)
+	}
+	
+	if !columnExists {
+		// Add collection_id column to apis table
+		_, err = s.db.Exec("ALTER TABLE apis ADD COLUMN collection_id INTEGER DEFAULT 0")
+		if err != nil {
+			return fmt.Errorf("failed to add collection_id column: %w", err)
+		}
+	}
+	
+	// Create Collections table
+	_, err = s.db.Exec(`
+		CREATE TABLE IF NOT EXISTS collections (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			name TEXT NOT NULL,
+			description TEXT,
+			created_at TIMESTAMP NOT NULL,
+			updated_at TIMESTAMP NOT NULL
+		)
+	`)
+	if err != nil {
+		return err
+	}
 
 	// Create Schedules table
 	_, err = s.db.Exec(`
@@ -119,8 +148,8 @@ func (s *DBService) CreateAPI(api models.API) (models.API, error) {
 	api.UpdatedAt = now
 
 	result, err := s.db.Exec(
-		"INSERT INTO apis (name, method, url, headers, body, description, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-		api.Name, api.Method, api.URL, api.Headers, api.Body, api.Description, api.CreatedAt, api.UpdatedAt,
+		"INSERT INTO apis (name, method, url, headers, body, description, collection_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+		api.Name, api.Method, api.URL, api.Headers, api.Body, api.Description, api.CollectionID, api.CreatedAt, api.UpdatedAt,
 	)
 	if err != nil {
 		return api, fmt.Errorf("failed to create API: %w", err)
@@ -140,8 +169,8 @@ func (s *DBService) UpdateAPI(api models.API) (models.API, error) {
 	api.UpdatedAt = time.Now()
 
 	_, err := s.db.Exec(
-		"UPDATE apis SET name = ?, method = ?, url = ?, headers = ?, body = ?, description = ?, updated_at = ? WHERE id = ?",
-		api.Name, api.Method, api.URL, api.Headers, api.Body, api.Description, api.UpdatedAt, api.ID,
+		"UPDATE apis SET name = ?, method = ?, url = ?, headers = ?, body = ?, description = ?, collection_id = ?, updated_at = ? WHERE id = ?",
+		api.Name, api.Method, api.URL, api.Headers, api.Body, api.Description, api.CollectionID, api.UpdatedAt, api.ID,
 	)
 	if err != nil {
 		return api, fmt.Errorf("failed to update API: %w", err)
@@ -168,11 +197,18 @@ func (s *DBService) DeleteAPI(id int) error {
 // GetAPIByID gets an API by ID
 func (s *DBService) GetAPIByID(id int) (models.API, error) {
 	var api models.API
-	err := s.db.QueryRow(
-		"SELECT id, name, method, url, headers, body, description, created_at, updated_at FROM apis WHERE id = ?",
+	
+	// Use a more resilient query that handles potential missing collection_id column
+	err := s.db.QueryRow(`
+		SELECT 
+			id, name, method, url, headers, body, description, 
+			COALESCE(collection_id, 0) as collection_id, 
+			created_at, updated_at 
+		FROM apis WHERE id = ?`,
 		id,
 	).Scan(
-		&api.ID, &api.Name, &api.Method, &api.URL, &api.Headers, &api.Body, &api.Description, &api.CreatedAt, &api.UpdatedAt,
+		&api.ID, &api.Name, &api.Method, &api.URL, &api.Headers, &api.Body, 
+		&api.Description, &api.CollectionID, &api.CreatedAt, &api.UpdatedAt,
 	)
 	if err != nil {
 		return api, fmt.Errorf("failed to get API by ID: %w", err)
@@ -182,7 +218,14 @@ func (s *DBService) GetAPIByID(id int) (models.API, error) {
 
 // GetAllAPIs gets all APIs
 func (s *DBService) GetAllAPIs() ([]models.API, error) {
-	rows, err := s.db.Query("SELECT id, name, method, url, headers, body, description, created_at, updated_at FROM apis ORDER BY name")
+	// Use a more resilient query that handles potential missing collection_id column
+	rows, err := s.db.Query(`
+		SELECT 
+			id, name, method, url, headers, body, description, 
+			COALESCE(collection_id, 0) as collection_id, 
+			created_at, updated_at 
+		FROM apis ORDER BY name
+	`)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query APIs: %w", err)
 	}
@@ -191,7 +234,8 @@ func (s *DBService) GetAllAPIs() ([]models.API, error) {
 	var apis []models.API
 	for rows.Next() {
 		var api models.API
-		if err := rows.Scan(&api.ID, &api.Name, &api.Method, &api.URL, &api.Headers, &api.Body, &api.Description, &api.CreatedAt, &api.UpdatedAt); err != nil {
+		if err := rows.Scan(&api.ID, &api.Name, &api.Method, &api.URL, &api.Headers, 
+			&api.Body, &api.Description, &api.CollectionID, &api.CreatedAt, &api.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("failed to scan API row: %w", err)
 		}
 		apis = append(apis, api)
@@ -440,4 +484,222 @@ func (s *DBService) GetRecentExecutions(limit int) ([]models.ExecutionLog, error
 	}
 
 	return logs, nil
+}
+
+// Collection Operations
+
+// CreateCollection creates a new collection
+func (s *DBService) CreateCollection(collection models.Collection) (models.Collection, error) {
+	now := time.Now()
+	collection.CreatedAt = now
+	collection.UpdatedAt = now
+
+	result, err := s.db.Exec(
+		"INSERT INTO collections (name, description, created_at, updated_at) VALUES (?, ?, ?, ?)",
+		collection.Name, collection.Description, collection.CreatedAt, collection.UpdatedAt,
+	)
+	if err != nil {
+		return collection, fmt.Errorf("failed to create collection: %w", err)
+	}
+
+	id, err := result.LastInsertId()
+	if err != nil {
+		return collection, fmt.Errorf("failed to get last insert ID: %w", err)
+	}
+
+	collection.ID = int(id)
+	return collection, nil
+}
+
+// UpdateCollection updates an existing collection
+func (s *DBService) UpdateCollection(collection models.Collection) (models.Collection, error) {
+	collection.UpdatedAt = time.Now()
+
+	_, err := s.db.Exec(
+		"UPDATE collections SET name = ?, description = ?, updated_at = ? WHERE id = ?",
+		collection.Name, collection.Description, collection.UpdatedAt, collection.ID,
+	)
+	if err != nil {
+		return collection, fmt.Errorf("failed to update collection: %w", err)
+	}
+
+	// Get the updated collection
+	updatedCollection, err := s.GetCollectionByID(collection.ID)
+	if err != nil {
+		return collection, fmt.Errorf("failed to get updated collection: %w", err)
+	}
+
+	return updatedCollection, nil
+}
+
+// DeleteCollection deletes a collection by ID
+func (s *DBService) DeleteCollection(id int) error {
+	// First, update all APIs to remove them from this collection
+	_, err := s.db.Exec("UPDATE apis SET collection_id = 0 WHERE collection_id = ?", id)
+	if err != nil {
+		return fmt.Errorf("failed to update APIs: %w", err)
+	}
+
+	// Then delete the collection
+	_, err = s.db.Exec("DELETE FROM collections WHERE id = ?", id)
+	if err != nil {
+		return fmt.Errorf("failed to delete collection: %w", err)
+	}
+	return nil
+}
+
+// GetCollectionByID gets a collection by ID
+func (s *DBService) GetCollectionByID(id int) (models.Collection, error) {
+	var collection models.Collection
+	err := s.db.QueryRow(
+		"SELECT id, name, description, created_at, updated_at FROM collections WHERE id = ?",
+		id,
+	).Scan(
+		&collection.ID, &collection.Name, &collection.Description, &collection.CreatedAt, &collection.UpdatedAt,
+	)
+	if err != nil {
+		return collection, fmt.Errorf("failed to get collection by ID: %w", err)
+	}
+	return collection, nil
+}
+
+// GetAllCollections gets all collections
+func (s *DBService) GetAllCollections() ([]models.Collection, error) {
+	rows, err := s.db.Query("SELECT id, name, description, created_at, updated_at FROM collections ORDER BY name")
+	if err != nil {
+		return nil, fmt.Errorf("failed to query collections: %w", err)
+	}
+	defer rows.Close()
+
+	var collections []models.Collection
+	for rows.Next() {
+		var collection models.Collection
+		if err := rows.Scan(&collection.ID, &collection.Name, &collection.Description, &collection.CreatedAt, &collection.UpdatedAt); err != nil {
+			return nil, fmt.Errorf("failed to scan collection row: %w", err)
+		}
+		collections = append(collections, collection)
+	}
+
+	return collections, nil
+}
+
+// GetAPIsByCollectionID gets all APIs in a collection
+func (s *DBService) GetAPIsByCollectionID(collectionID int) ([]models.API, error) {
+	// Use a more resilient query with COALESCE
+	rows, err := s.db.Query(`
+		SELECT 
+			id, name, method, url, headers, body, description, 
+			COALESCE(collection_id, 0) as collection_id, 
+			created_at, updated_at 
+		FROM apis 
+		WHERE COALESCE(collection_id, 0) = ? 
+		ORDER BY name`,
+		collectionID,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query APIs in collection: %w", err)
+	}
+	defer rows.Close()
+
+	var apis []models.API
+	for rows.Next() {
+		var api models.API
+		if err := rows.Scan(&api.ID, &api.Name, &api.Method, &api.URL, &api.Headers, 
+			&api.Body, &api.Description, &api.CollectionID, &api.CreatedAt, &api.UpdatedAt); err != nil {
+			return nil, fmt.Errorf("failed to scan API row: %w", err)
+		}
+		apis = append(apis, api)
+	}
+
+	return apis, nil
+}
+
+// GetAPIAnalytics provides analytics for a specific API
+func (s *DBService) GetAPIAnalytics(apiID int) (models.AnalyticsSummary, error) {
+	var analytics models.AnalyticsSummary
+	
+	// Get total executions
+	var totalCount int
+	err := s.db.QueryRow("SELECT COUNT(*) FROM execution_logs WHERE api_id = ?", apiID).Scan(&totalCount)
+	if err != nil {
+		return analytics, fmt.Errorf("failed to get execution count: %w", err)
+	}
+	analytics.TotalExecutions = totalCount
+	
+	// Get success count (status code 2xx)
+	var successCount int
+	err = s.db.QueryRow("SELECT COUNT(*) FROM execution_logs WHERE api_id = ? AND status_code >= 200 AND status_code < 300", apiID).Scan(&successCount)
+	if err != nil {
+		return analytics, fmt.Errorf("failed to get success count: %w", err)
+	}
+	analytics.SuccessCount = successCount
+	
+	// Calculate failure count
+	analytics.FailureCount = totalCount - successCount
+	
+	// Calculate success rate and error rate
+	if totalCount > 0 {
+		analytics.SuccessRate = float64(successCount) / float64(totalCount) * 100
+		analytics.ErrorRate = 100 - analytics.SuccessRate
+	}
+	
+	// Calculate an estimated uptime (simplistic approach based on success rate)
+	analytics.Uptime = analytics.SuccessRate
+	
+	// Get most recent execution time
+	var lastExecutionTime sql.NullTime
+	err = s.db.QueryRow("SELECT executed_at FROM execution_logs WHERE api_id = ? ORDER BY executed_at DESC LIMIT 1", apiID).Scan(&lastExecutionTime)
+	if err != nil && err != sql.ErrNoRows {
+		return analytics, fmt.Errorf("failed to get last execution time: %w", err)
+	}
+	if lastExecutionTime.Valid {
+		analytics.LastExecutionTime = lastExecutionTime.Time.Format(time.RFC3339)
+	}
+	
+	return analytics, nil
+}
+
+// GetOverallAnalytics provides aggregated analytics for all APIs
+func (s *DBService) GetOverallAnalytics() (models.AnalyticsSummary, error) {
+	var analytics models.AnalyticsSummary
+	
+	// Get total executions
+	var totalCount int
+	err := s.db.QueryRow("SELECT COUNT(*) FROM execution_logs").Scan(&totalCount)
+	if err != nil {
+		return analytics, fmt.Errorf("failed to get execution count: %w", err)
+	}
+	analytics.TotalExecutions = totalCount
+	
+	// Get success count (status code 2xx)
+	var successCount int
+	err = s.db.QueryRow("SELECT COUNT(*) FROM execution_logs WHERE status_code >= 200 AND status_code < 300").Scan(&successCount)
+	if err != nil {
+		return analytics, fmt.Errorf("failed to get success count: %w", err)
+	}
+	analytics.SuccessCount = successCount
+	
+	// Calculate failure count
+	analytics.FailureCount = totalCount - successCount
+	
+	// Calculate success rate and error rate
+	if totalCount > 0 {
+		analytics.SuccessRate = float64(successCount) / float64(totalCount) * 100
+		analytics.ErrorRate = 100 - analytics.SuccessRate
+	}
+	
+	// Calculate an estimated uptime (simplistic approach based on success rate)
+	analytics.Uptime = analytics.SuccessRate
+	
+	// Get most recent execution time
+	var lastExecutionTime sql.NullTime
+	err = s.db.QueryRow("SELECT executed_at FROM execution_logs ORDER BY executed_at DESC LIMIT 1").Scan(&lastExecutionTime)
+	if err != nil && err != sql.ErrNoRows {
+		return analytics, fmt.Errorf("failed to get last execution time: %w", err)
+	}
+	if lastExecutionTime.Valid {
+		analytics.LastExecutionTime = lastExecutionTime.Time.Format(time.RFC3339)
+	}
+	
+	return analytics, nil
 } 

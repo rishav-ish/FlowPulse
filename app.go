@@ -85,6 +85,84 @@ func (a *App) DeleteAPI(id int) error {
 	return a.db.DeleteAPI(id)
 }
 
+// Collection methods
+
+// GetAllCollections returns all collections
+func (a *App) GetAllCollections() ([]models.Collection, error) {
+	return a.db.GetAllCollections()
+}
+
+// GetCollectionByID returns a collection by ID
+func (a *App) GetCollectionByID(id int) (models.Collection, error) {
+	return a.db.GetCollectionByID(id)
+}
+
+// CreateCollection creates a new collection
+func (a *App) CreateCollection(collection models.Collection) (models.Collection, error) {
+	return a.db.CreateCollection(collection)
+}
+
+// UpdateCollection updates an existing collection
+func (a *App) UpdateCollection(collection models.Collection) (models.Collection, error) {
+	return a.db.UpdateCollection(collection)
+}
+
+// DeleteCollection deletes a collection by ID
+func (a *App) DeleteCollection(id int) error {
+	return a.db.DeleteCollection(id)
+}
+
+// GetAPIsByCollectionID returns all APIs in a collection
+func (a *App) GetAPIsByCollectionID(collectionID int) ([]models.API, error) {
+	return a.db.GetAPIsByCollectionID(collectionID)
+}
+
+// Analytics methods
+
+// GetAPIAnalytics returns analytics for a specific API
+func (a *App) GetAPIAnalytics(apiID int) (models.AnalyticsSummary, error) {
+	return a.db.GetAPIAnalytics(apiID)
+}
+
+// GetOverallAnalytics returns overall analytics for all APIs
+func (a *App) GetOverallAnalytics() (models.AnalyticsSummary, error) {
+	return a.db.GetOverallAnalytics()
+}
+
+// GetExecutionStatusCounts returns counts of different status code ranges for an API
+func (a *App) GetExecutionStatusCounts(apiID int) (map[string]int, error) {
+	logs, err := a.db.GetExecutionLogsByAPIID(apiID, 1000) // Get a large sample
+	if err != nil {
+		return nil, err
+	}
+	
+	counts := map[string]int{
+		"success": 0,   // 2xx
+		"redirect": 0,  // 3xx
+		"client_error": 0, // 4xx
+		"server_error": 0, // 5xx
+		"other": 0,     // Other codes
+	}
+	
+	for _, log := range logs {
+		statusCode := log.StatusCode
+		
+		if statusCode >= 200 && statusCode < 300 {
+			counts["success"]++
+		} else if statusCode >= 300 && statusCode < 400 {
+			counts["redirect"]++
+		} else if statusCode >= 400 && statusCode < 500 {
+			counts["client_error"]++
+		} else if statusCode >= 500 {
+			counts["server_error"]++
+		} else {
+			counts["other"]++
+		}
+	}
+	
+	return counts, nil
+}
+
 // Schedules methods
 
 // GetAllSchedules returns all schedules

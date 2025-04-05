@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Container, Title, TextInput, Select, Textarea,
   Button, Group, Paper, Box, Tabs, Text,
   LoadingOverlay, Alert, Code, Badge, Grid,
   Divider, ActionIcon, Tooltip, Card, JsonInput,
-  Switch, Collapse, Accordion, useMantineTheme
+  Switch, Collapse, Accordion, useMantineTheme, Stack
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { 
@@ -15,8 +15,8 @@ import {
   IconLayoutGridAdd, IconInfoCircle, IconRefresh,
   IconSend, IconCornerDownRight, IconPlus
 } from '@tabler/icons-react';
-import { API, BaseAPI, HTTP_METHODS, HTTPMethod, DEFAULT_HEADERS } from '../types';
-import { GetAPIByID, CreateAPI, UpdateAPI } from '../../wailsjs/go/main/App';
+import { API, BaseAPI, HTTP_METHODS, HTTPMethod, DEFAULT_HEADERS, Collection } from '../types';
+import { GetAPIByID, CreateAPI, UpdateAPI, GetAllCollections } from '../../wailsjs/go/main/App';
 import { models } from '../../wailsjs/go/models';
 
 const MethodBadge = ({ method }: { method: string }) => {
@@ -52,6 +52,7 @@ export function APIForm() {
   const [success, setSuccess] = useState<string | null>(null);
   const theme = useMantineTheme();
   const isEditMode = !!id;
+  const [collections, setCollections] = useState<Collection[]>([]);
 
   const form = useForm<BaseAPI>({
     initialValues: {
@@ -60,7 +61,8 @@ export function APIForm() {
       url: '',
       headers: DEFAULT_HEADERS,
       body: '',
-      description: ''
+      description: '',
+      collectionId: 0,
     },
     validate: {
       name: (value) => (value ? null : 'Name is required'),
@@ -83,6 +85,25 @@ export function APIForm() {
     }
   }, [id]);
 
+  useEffect(() => {
+    const loadCollections = async () => {
+      setLoading(true);
+      setError(null);
+      
+      try {
+        const collectionsData = await GetAllCollections();
+        setCollections(collectionsData || []);
+      } catch (err) {
+        console.error('Failed to load collections:', err);
+        setError('Failed to load collections. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadCollections();
+  }, []);
+
   const loadAPI = async (apiId: number) => {
     setLoading(true);
     setError(null);
@@ -95,7 +116,8 @@ export function APIForm() {
         url: api.url,
         headers: api.headers,
         body: api.body,
-        description: api.description
+        description: api.description,
+        collectionId: api.collectionId || 0,
       });
     } catch (err) {
       setError('Failed to load API details. Please try again.');
@@ -111,10 +133,26 @@ export function APIForm() {
     setSuccess(null);
 
     try {
+      let headersStr = values.headers;
+      
+      // Validate headers if provided
+      if (headersStr.trim()) {
+        try {
+          JSON.parse(headersStr);
+        } catch (err) {
+          setError('Headers must be valid JSON');
+          setLoading(false);
+          return;
+        }
+      }
+      
       if (isEditMode && id) {
         const apiModel = new models.API({
           id: parseInt(id),
-          ...values
+          ...values,
+          collectionId: values.collectionId || 0,
+          createdAt: new Date().toISOString(), // This will be ignored by the backend
+          updatedAt: new Date().toISOString(),
         });
         await UpdateAPI(apiModel);
         setSuccess('API updated successfully');
@@ -379,24 +417,38 @@ export function APIForm() {
             </Card.Section>
           </Card>
 
-          <Group position="right" mt="xl">
-            <Button 
-              variant="default"
-              leftIcon={<IconRefresh size={16} />}
-              onClick={() => form.reset()}
-              disabled={loading}
-            >
-              Reset
-            </Button>
-            
-            <Button
-              type="submit"
-              leftIcon={<IconDeviceFloppy size={16} />}
-              loading={loading}
-            >
-              {isEditMode ? 'Update API' : 'Create API'}
-            </Button>
-          </Group>
+          <Stack spacing="md" mt="xl">
+            <Select
+              label="Collection"
+              placeholder="Select a collection (optional)"
+              value={form.values.collectionId.toString()}
+              onChange={(value) => form.setFieldValue('collectionId', value ? parseInt(value) : 0)}
+              data={[
+                { value: '0', label: 'No Collection' },
+                ...collections.map(c => ({ value: c.id.toString(), label: c.name }))
+              ]}
+              clearable
+            />
+
+            <Group position="right">
+              <Button 
+                variant="default"
+                leftIcon={<IconRefresh size={16} />}
+                onClick={() => form.reset()}
+                disabled={loading}
+              >
+                Reset
+              </Button>
+              
+              <Button
+                type="submit"
+                leftIcon={<IconDeviceFloppy size={16} />}
+                loading={loading}
+              >
+                {isEditMode ? 'Update API' : 'Create API'}
+              </Button>
+            </Group>
+          </Stack>
         </form>
       </Paper>
     </Container>
