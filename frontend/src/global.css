@@ -1,0 +1,14 @@
+/* Global overrides to ensure transparency */
+html, body, #root, #app, .mantine-AppShell-root, .mantine-AppShell-main {
+  background-color: transparent !important;
+}
+
+/* Add some contrast for content but keep transparency */
+.mantine-Paper-root {
+  background-color: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* Dark mode adjustments */
+[data-mantine-color-scheme="dark"] .mantine-Paper-root {
+  background-color: rgba(30, 30, 30, 0.8) !important;
+} 
